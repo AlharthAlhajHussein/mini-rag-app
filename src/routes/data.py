@@ -44,7 +44,7 @@ async def upload_data(request: Request, project_id: str, file: UploadFile,
             content={'signal': ResponseSignals.FILE_UPLOAD_FAILED.value}
         )
     
-    project_model = ProjectModel(request.app.database)
+    project_model = await ProjectModel.create_instance(request.app.database)
     project = await project_model.get_project_or_create_one(project_id)
     
     return JSONResponse(
@@ -74,7 +74,7 @@ async def process_endpoint(request: Request, project_id: str, process_request: P
             content={'signal': ResponseSignals.FILE_PROCESSING_FAILED.value}
         )
     
-    project_model = ProjectModel(request.app.database)
+    project_model = await ProjectModel.create_instance(request.app.database)
     project = await project_model.get_project_or_create_one(project_id)
     
     file_chunks_records = [
@@ -86,7 +86,7 @@ async def process_endpoint(request: Request, project_id: str, process_request: P
         ) for index, chunk in enumerate(file_chunks)
     ]
     
-    chunk_model = ChunkModel(request.app.database)
+    chunk_model = await ChunkModel.create_instance(request.app.database)
     
     if do_reset:
         _ = await chunk_model.delete_chunks_by_project_id(project.id)
