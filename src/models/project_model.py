@@ -4,6 +4,7 @@ from .enums.db_Enum import DB_Enum
 
 
 class ProjectModel(BaseDataModel):
+    
     def __init__(self, db_client: object):
         super().__init__(db_client)
         self.collection = db_client[DB_Enum.COLLECTION_PROJECT_NAME.value]
@@ -37,8 +38,7 @@ class ProjectModel(BaseDataModel):
         new_project = Project(project_id=project_id)
         created_project = await self.create_project(new_project)
         return created_project 
-    
-    
+     
     async def get_all_projects(self, page: int=1, page_size: int=10) -> list[Project]:
         total_documents = self.collection.count_documents({})
         

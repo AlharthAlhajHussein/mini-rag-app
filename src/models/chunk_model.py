@@ -24,8 +24,7 @@ class ChunkModel(BaseDataModel):
         indexes = DataChunks.get_indexes()
         for index in indexes:
             await self.collection.create_index(index["key"], name=index["name"], unique=index["unique"])
-    
-        
+           
     async def create_chunk(self, chunk_data: DataChunks) -> DataChunks:
         result = await self.collection.insert_one(chunk_data.dict(by_alias=True, exclude_unset=True))
         chunk_data.id = result.inserted_id
