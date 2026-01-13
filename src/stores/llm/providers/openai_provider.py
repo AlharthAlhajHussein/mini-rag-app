@@ -1,5 +1,5 @@
-from stores.llm_interface import LLMInterface
-from stores.llm_enums import OpenAIEnums
+from ..llm_interface import LLMInterface
+from ..llm_enums import OpenAIEnums
 from openai import OpenAI
 import logging
 
@@ -7,15 +7,15 @@ import logging
 class OpenAIProvider(LLMInterface):
     
     def __init__(self, api_key: str, api_url: str = None,
-                 default_input_max_charcters: int= 1000,
-                 default_output_max_charcters: int= 1000,
+                 default_input_max_characters: int= 1000,
+                 default_output_max_characters: int= 1000,
                  default_temperature: float = 0.1):
         
         self.api_key = api_key
         self.api_url = api_url
         
-        self.default_input_max_charcters = default_input_max_charcters
-        self.default_output_max_charcters = default_output_max_charcters
+        self.default_input_max_characters = default_input_max_characters
+        self.default_output_max_characters = default_output_max_characters
         self.default_temperature = default_temperature
         
         self.generation_model_id = None
@@ -45,7 +45,7 @@ class OpenAIProvider(LLMInterface):
             logging.error("Generation model from OpenAI provider is not set.")
             return None
         
-        max_tokens = max_output_tokens if max_output_tokens is not None else self.default_output_max_charcters
+        max_tokens = max_output_tokens if max_output_tokens is not None else self.default_output_max_characters
         temp = temperature if temperature is not None else self.default_temperature
 
         chat_history.append(self.construct_prompt(prompt, role=OpenAIEnums.USER.value))
@@ -65,25 +65,39 @@ class OpenAIProvider(LLMInterface):
 
     
     def embed_text(self, text: str, document_type: str = None) -> list[float]:
-       
-        if not self.client:
-            logging.error("OpenAI client is not initialized.")
-            return None
-            
         if not self.embedding_model_id:
-            logging.error("Embedding model is not set.")
+            self.logger.error("Embedding model is not set.")
             return None
 
-        response = self.client.embeddings.create(
-            input=text,
-            model=self.embedding_model_id
-        )
+        # Build the arguments for the API call
+        params = {
+            "input": text,
+            "model": self.embedding_model_id
+        }
 
-        if response is None or 'data' not in response or len(response.data) == 0 or not response.data[0].embedding:
-            logging.error("Failed to get embedding from OpenAI.")
+        # OpenAI only supports the 'dimensions' argument for v3 models.
+        # If self.embedding_size is set, we pass it to shorten the vector.
+        if self.embedding_size:
+            params["dimensions"] = self.embedding_size
+
+        try:
+            response = self.client.embeddings.create(**params)
+            
+            if not response or not response.data:
+                return None
+            
+            vector = response.data[0].embedding
+            
+            # AUTO-DETECTION: Update embedding_size if it was previously unknown
+            if self.embedding_size is None:
+                self.embedding_size = len(vector)
+                self.logger.info(f"Auto-detected OpenAI embedding size: {self.embedding_size}")
+            
+            return vector
+
+        except Exception as e:
+            self.logger.error(f"OpenAI embedding error: {e}")
             return None
-        
-        return response.data[0].embedding   
 
 
     def construct_prompt(self, prompt: str, role: str) -> dict:
@@ -91,4 +105,4 @@ class OpenAIProvider(LLMInterface):
                 "content": self.process_text(prompt)}
 
     def process_text(self, text: str) -> str:
-        return text[:self.default_input_max_charcters].strip()
+        return text[:self.default_input_max_characters].strip()
