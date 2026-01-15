@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     GENERATION_DEFAULT_MAX_TOKENS: int = None
     GENERATION_DEFAULT_TEMPERATURE: float = None
     
+    VECTOR_DB_BACKEND: str  # Options: qdrant_db, pinecone_db, weaviate_db, faiss_db
+    VECTOR_DB_PATH: str
+    VECTOR_DB_DISTANCE_METRIC: str = None  # Options: Cosine, Euclidean, DotProduct
+    
+    
     model_config = SettingsConfigDict(env_file=".env")
         
 def get_settings():
