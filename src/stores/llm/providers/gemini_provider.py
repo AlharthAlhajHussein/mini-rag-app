@@ -1,8 +1,9 @@
 import logging
-from google import genai
-from google.genai import types
+# from google import genai
+# from google.genai import types
 from ..llm_interface import LLMInterface
 from ..llm_enums import GeminiEnums, DocumentTypeEnums
+import google.generativeai as genai
 
 class GeminiProvider(LLMInterface):
     
@@ -20,8 +21,9 @@ class GeminiProvider(LLMInterface):
         self.embedding_model_id = None
         self.embedding_size = None
 
-        # Initialize the new Google Gen AI client
-        self.client = genai.Client(api_key=self.api_key)
+        # Initialize the Google Generative AI client
+        genai.configure(api_key=self.api_key)
+        self.client = None  # Not needed, use genai directly
         self.logger = logging.getLogger(__name__)
 
     def set_generation_model(self, model_name: str) -> None:
@@ -39,67 +41,64 @@ class GeminiProvider(LLMInterface):
             return None
 
         # Gemini uses 'max_output_tokens' and 'temperature' inside a config object
-        config = types.GenerateContentConfig(
+        config = genai.types.GenerationConfig(
             max_output_tokens=max_output_tokens or self.default_output_max_characters,
             temperature=temperature if temperature is not None else self.default_temperature
         )
 
-        # Gemini history uses 'user' and 'model' (not 'assistant')        
-        try:
-            # For Gemini, the 'contents' argument handles the conversation history
-            # If history exists, we append the current message to it
-            messages = chat_history + [self.construct_prompt(prompt=prompt, role=GeminiEnums.USER.value)]
+        model = genai.GenerativeModel(self.generation_model_id)
+        
+        # For Gemini, the 'contents' argument handles the conversation history
+        # If history exists, we append the current message to it
+        messages = chat_history + [self.construct_prompt(prompt=prompt, role=GeminiEnums.USER.value)]
+        
+        response = model.generate_content(
+            messages,
+            generation_config=config
+        )
             
-            response = self.client.models.generate_content(
-                model=self.generation_model_id,
-                contents=messages,
-                config=config
-            )
-            
-            if not response or not response.text:
-                self.logger.error("Failed to get text from Gemini response.")
-                return None
-                
-            return response.text
-            
-        except Exception as e:
-            self.logger.error(f"Gemini generation error: {str(e)}")
+        if not response or not response.text:
+            self.logger.error("Failed to get text from Gemini response.")
             return None
+            
+        return response.text
+            
+
 
     def embed_text(self, text: str, document_type: str = None) -> list[float]:
         if not self.embedding_model_id:
             self.logger.error("Embedding model is not set.")
             return None
 
+        # Mapping your internal document types to Gemini-specific task types
         input_type = GeminiEnums.DOCUMENT.value
         if document_type == DocumentTypeEnums.QUERY.value:
             input_type = GeminiEnums.QUERY.value
         
         try:
-            # We pass output_dimensionality only if it's explicitly set
-            config = types.EmbedContentConfig(
-                task_type=input_type,
-                output_dimensionality=self.embedding_size 
-            )
-
-            response = self.client.models.embed_content(
+            # We pass output_dimensionality to the API. 
+            # Note: This only works with newer models like 'text-embedding-004'
+            result = genai.embed_content(
                 model=self.embedding_model_id,
-                contents=text,
-                config=config
+                content=text,
+                task_type=input_type,
+                output_dimensionality=self.embedding_size # <--- Added this line
             )
             
-            if not response or not response.embeddings:
+            # In the google-generativeai library, the response is typically 
+            # accessed via result['embedding']
+            if not result or 'embedding' not in result:
                 return None
             
-            vector = response.embeddings[0].values
+            vector = result['embedding']
             
-            # AUTO-DETECTION: If embedding_size wasn't set, learn it from the response
+            # AUTO-DETECTION: Update self.embedding_size if it was unknown
             if self.embedding_size is None:
                 self.embedding_size = len(vector)
                 self.logger.info(f"Auto-detected Gemini embedding size: {self.embedding_size}")
                 
             return vector
-            
+                            
         except Exception as e:
             self.logger.error(f"Gemini embedding error: {str(e)}")
             return None

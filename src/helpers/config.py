@@ -19,11 +19,11 @@ class Settings(BaseSettings):
 
     OPENAI_API_KEY: str = None
     GEMINI_API_KEY: str = None
-    HUGGINGFACE_API_KEY: str = None
+    HUGGING_FACE_API_KEY: str = None
 
     GENERATION_MODEL_ID: str = None  # OpenAI: gpt-4o, gpt-3.5-turbo | Gemini: gemini-1.5-pro | HuggingFace: meta-llama/Llama-2-7b-chat-hf
-    EMBEDDING_MODEL_ID: str = None  # OpenAI: text-embedding-3-small | Gemini: embedding-gecko-001 | HuggingFace: sentence-transformers/all-MiniLM-L6-v2
-    EMBEDDING_SIZE: int = None  # OpenAI: 3076,1536 | Gemini: 1024, 768, 384 | HuggingFace: 384
+    EMBEDDING_MODEL_ID: str = None  # OpenAI: text-embedding-3-small | Gemini: models/text-embedding-004 | HuggingFace: sentence-transformers/all-MiniLM-L6-v2
+    EMBEDDING_SIZE: int = None  # OpenAI: 3076,1536 | Gemini: 768 | HuggingFace: 384
 
     INPUT_DEFAULT_MAX_CHARACTERS: int = None
     GENERATION_DEFAULT_MAX_TOKENS: int = None

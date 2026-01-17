@@ -15,8 +15,8 @@ class GeminiEnums(Enum):
     USER = "user"
     ASSISTANT = "model"  # Gemini uses 'model' instead of 'assistant'
 
-    DOCUMENT = "RETRIEVAL_DOCUMENT"
-    QUERY = "RETRIEVAL_QUERY"
+    DOCUMENT = "retrieval_document"
+    QUERY = "retrieval_query"
 
 class HuggingFaceEnums(Enum):
     SYSTEM = "system"

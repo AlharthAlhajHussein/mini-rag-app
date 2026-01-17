@@ -15,4 +15,11 @@ class ResponseSignals(Enum):
     
     NO_FILES_TO_PROCESS = "no files to process"
     FILE_NOT_FOUND = "file not found with given id"
+    PROJECT_NOT_FOUND = "project not found with given id"
+    INSERT_INTO_DB_ERROR = "insert into db error"
+    INSERT_INTO_VECTOR_DB_SUCCESS = "insert into vector db success"
+    VECTORDB_COLLECTION_RETRIEVED = "vectordb collection retrieved"
+    VECTORDB_SEARCH_ERROR_OR_NOT_FOUND = "vector db search error or not found"
+    VECTORDB_SEARCH_SUCCESS = "vector db search success"
+    
     
