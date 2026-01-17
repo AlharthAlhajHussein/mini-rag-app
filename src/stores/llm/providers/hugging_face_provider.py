@@ -56,7 +56,7 @@ class HuggingFaceProvider(LLMInterface):
             self.logger.error(f"Hugging Face API error: {e}")
             return None
 
-    def embed_text(self, text: str) -> list[float]:
+    def embed_text(self, text: str, document_type: str= None) -> list[float]:
         if not self.embedding_model_id:
             self.logger.error("Embedding model is not set.")
             return None
