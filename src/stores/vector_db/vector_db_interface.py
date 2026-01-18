@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List
+from models.db_schemes import RetrievedDocument
 
 
 
@@ -64,7 +65,7 @@ class VectorDBInterface(ABC):
     def search_by_vector(self, collection_name: str,
                          query_vector: List[float],
                          top_k: int= 10,
-                         filter: dict= None) -> List[dict]:
+                         filter: dict= None) -> List[RetrievedDocument]:
         """Search for similar vectors in a specific collection using a query vector."""
         pass
     

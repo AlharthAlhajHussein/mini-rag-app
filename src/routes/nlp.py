@@ -104,17 +104,16 @@ async def search_index(request: Request, project_id: str, search_request: Search
     
     search_result = nlp_controller.search_vector_db_collection(project, search_request.query_text, top_k=search_request.top_k)
     
-    if search_result == False:
+    if not search_result:
         return JSONResponse(
             status_code= status.HTTP_400_BAD_REQUEST,
             content = {"signal": ResponseSignals.VECTORDB_SEARCH_ERROR_OR_NOT_FOUND.value} 
         )
     
-    
     return JSONResponse(
         content= {
             "signal": ResponseSignals.VECTORDB_SEARCH_SUCCESS.value,
-            "search result": search_result
+            "results": [result.dict() for result in search_result]
         }
     )
     

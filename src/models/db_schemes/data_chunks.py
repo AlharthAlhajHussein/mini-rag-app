@@ -16,6 +16,7 @@ class DataChunks(BaseModel):
         
     @classmethod
     def get_indexes(cls):
+        
         return [
             {
                 "key": {"chunk_project_id": 1},
@@ -23,3 +24,8 @@ class DataChunks(BaseModel):
                 "unique": False
             }
         ]
+        
+class RetrievedDocument(BaseModel):
+    text: str
+    score: float
+    

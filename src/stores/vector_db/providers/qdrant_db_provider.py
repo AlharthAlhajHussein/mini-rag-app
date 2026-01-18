@@ -5,6 +5,7 @@ from qdrant_client import models, QdrantClient
 from qdrant_client.models import PointStruct
 from typing import List
 import json
+from models.db_schemes import RetrievedDocument
 
 
 class QdrantDBProvider(VectorDBInterface):
@@ -140,11 +141,27 @@ class QdrantDBProvider(VectorDBInterface):
                          top_k: int= 5) -> List[dict]:
         
         
-        return self.client.query_points(
+        results = self.client.query_points(
             collection_name= collection_name,
             query= query_vector,
             limit= top_k
         )
+        
+        if not results.points:
+            return []
+        
+        return [
+            RetrievedDocument(**{
+                "score": result.score,
+                "text": result.payload['text']
+            })
+            for result in results.points
+        ]
+        
+        
+        
+        
+        
             
 
                     
