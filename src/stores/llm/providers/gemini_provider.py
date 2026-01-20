@@ -24,6 +24,7 @@ class GeminiProvider(LLMInterface):
         # Initialize the Google Generative AI client
         genai.configure(api_key=self.api_key)
         self.client = None  # Not needed, use genai directly
+        self.enums = GeminiEnums
         self.logger = logging.getLogger(__name__)
 
     def set_generation_model(self, model_name: str) -> None:
