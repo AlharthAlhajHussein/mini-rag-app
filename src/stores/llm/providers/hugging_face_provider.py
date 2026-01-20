@@ -20,6 +20,7 @@ class HuggingFaceProvider(LLMInterface):
         
         # The InferenceClient can be used for text, images, and embeddings
         self.client = InferenceClient(token=self.api_key)
+        self.enums = HuggingFaceEnums
         self.logger = logging.getLogger(__name__)
 
     def set_generation_model(self, model_name: str) -> None:

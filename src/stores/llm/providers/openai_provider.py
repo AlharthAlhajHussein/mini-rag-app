@@ -3,7 +3,6 @@ from ..llm_enums import OpenAIEnums
 from openai import OpenAI
 import logging
 
-
 class OpenAIProvider(LLMInterface):
     
     def __init__(self, api_key: str, api_url: str = None,
@@ -23,6 +22,7 @@ class OpenAIProvider(LLMInterface):
         self.embedding_size = None
 
         self.client = OpenAI(api_key=self.api_key)
+        self.enums = OpenAIEnums
         self.logger = logging.getLogger(__name__)
         
     
@@ -50,18 +50,24 @@ class OpenAIProvider(LLMInterface):
 
         chat_history.append(self.construct_prompt(prompt, role=OpenAIEnums.USER.value))
         
-        response = self.client.chat.completions.create(
-            model=self.generation_model_id,
-            messages=chat_history,
-            max_tokens=max_tokens,
-            temperature=temp
-        )
+        try:
+            response = self.client.chat.completions.create(
+                model=self.generation_model_id,
+                messages=chat_history,
+                max_tokens=max_tokens,
+                temperature=temp
+            )
+        except Exception as e:
+            logging.error(f"Failed to get response from OpenAI: {e}")
+            return None
         
-        if response is None or 'choices' not in response or len(response.choices) == 0 or not response.choices[0].message.content:
+        
+        if response is None:
             logging.error("Failed to get response from OpenAI.")
             return None
         
-        return response.choices[0].message['content']
+        
+        return response.choices[0].message.content  
 
     
     def embed_text(self, text: str, document_type: str = None) -> list[float]:
