@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     VECTOR_DB_PATH: str
     VECTOR_DB_DISTANCE_METRIC: str = None  # Options: Cosine, Euclidean, DotProduct
     
+    PRIMARY_LANGUAGE: str = 'en'
+    DEFAULT_LANGUAGE: str = 'en'
     
     model_config = SettingsConfigDict(env_file=".env")
         
