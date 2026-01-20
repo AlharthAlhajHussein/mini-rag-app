@@ -4,7 +4,7 @@ from routes import base, data, nlp
 from helpers import get_settings
 from stores.llm import LLMProviderFactory
 from stores.vector_db import VectorDBProviderFactory
-
+from stores.llm.templates.template_parser import TemplateParser
 
 app = FastAPI()
 
@@ -29,6 +29,9 @@ async def startup():
     # Vector DB Client
     app.vector_db_client = vector_db_provider_factory.create(provider=settings.VECTOR_DB_BACKEND)
     app.vector_db_client.connect()
+    
+    app.template_parser = TemplateParser(language=settings.PRIMARY_LANGUAGE, default_language=settings.DEFAULT_LANGUAGE)
+    
     
     
 @app.on_event("shutdown")
