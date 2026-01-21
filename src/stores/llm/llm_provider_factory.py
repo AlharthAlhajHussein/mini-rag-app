@@ -1,4 +1,4 @@
-from .providers import OpenAIProvider, GeminiProvider, HuggingFaceProvider
+from .providers import OpenAIProvider, GeminiProvider, HuggingFaceProvider, OllamaProvider
 from .llm_enums import LLMEnums
 
 
@@ -30,5 +30,11 @@ class LLMProviderFactory:
                 default_output_max_characters= self.config.GENERATION_DEFAULT_MAX_TOKENS,
                 default_temperature= self.config.GENERATION_DEFAULT_TEMPERATURE
             )
-        
+        if provider_name == LLMEnums.OLLAMA.value:
+            return OllamaProvider(
+                api_key= self.config.OLLAMA_API_KEY,
+                default_input_max_characters= self.config.INPUT_DEFAULT_MAX_CHARACTERS,
+                default_output_max_characters= self.config.GENERATION_DEFAULT_MAX_TOKENS,
+                default_temperature= self.config.GENERATION_DEFAULT_TEMPERATURE
+            )
         return None
