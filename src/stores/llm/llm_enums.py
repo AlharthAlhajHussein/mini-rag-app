@@ -4,6 +4,7 @@ class LLMEnums(Enum):
     OPENAI = "openai"
     GEMINI = "gemini"
     HUGGING_FACE = "huggingface" 
+    OLLAMA = "ollama"
 
 class OpenAIEnums(Enum):
     SYSTEM = "system"
@@ -22,6 +23,15 @@ class HuggingFaceEnums(Enum):
     SYSTEM = "system"
     USER = "user"
     ASSISTANT = "assistant"
+
+class OllamaEnums(Enum):
+    SYSTEM = "system"
+    USER = "user"
+    ASSISTANT = "assistant" 
+    
+    DOCUMENT = "search_document"
+    QUERY = "search_query"
+    
 
 class DocumentTypeEnums(Enum):
     DOCUMENT = "document"
