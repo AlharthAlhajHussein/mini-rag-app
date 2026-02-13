@@ -10,8 +10,15 @@ class Settings(BaseSettings):
     FILE_MAX_SIZE: int
     FILE_DEFAULT_CHUNK_SIZE: int
     
-    MONGODB_URI: str
-    MONGODB_DB_NAME: str
+    # MONGODB_URI: str
+    # MONGODB_DB_NAME: str
+    
+    POSTGRESQL_USERNAME: str
+    POSTGRESQL_PASSWORD: str
+    POSTGRESQL_MAIN_DB: str
+    POSTGRESQL_HOST: str = "localhost"
+    POSTGRESQL_PORT: int = 5432
+     
 
     GENERATION_BACKEND: str  # Options: openai, gemini, huggingface
     EMBEDDING_BACKEND: str   # Options: openai, gemini, huggingface
@@ -21,6 +28,7 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = None
     HUGGING_FACE_API_KEY: str = None
     OLLAMA_API_KEY: str = None
+    OLLAMA_HOST: str = None
     
     GENERATION_MODEL_ID: str = None  # OpenAI: gpt-4o, gpt-3.5-turbo | Gemini: gemini-1.5-pro | HuggingFace: meta-llama/Llama-2-7b-chat-hf
     EMBEDDING_MODEL_ID: str = None  # OpenAI: text-embedding-3-small | Gemini: models/text-embedding-004 | HuggingFace: sentence-transformers/all-MiniLM-L6-v2
