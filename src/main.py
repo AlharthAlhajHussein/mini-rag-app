@@ -1,19 +1,22 @@
 from fastapi import FastAPI
-from motor.motor_asyncio import AsyncIOMotorClient
 from routes import base, data, nlp
 from helpers import get_settings
 from stores.llm import LLMProviderFactory
 from stores.vector_db import VectorDBProviderFactory
 from stores.llm.templates.template_parser import TemplateParser
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
 
 app = FastAPI()
 
 @app.on_event("startup")
 async def startup():
     settings = get_settings()
-    app.mongodb_client = AsyncIOMotorClient(settings.MONGODB_URI)
-    app.database = app.mongodb_client[settings.MONGODB_DB_NAME]
-    print("Connected to the MongoDB database!")
+    
+    postgres_conn = f"postgresql+asyncpg://{settings.POSTGRESQL_USERNAME}:{settings.POSTGRESQL_PASSWORD}@{settings.POSTGRESQL_HOST}:{settings.POSTGRESQL_PORT}/{settings.POSTGRESQL_MAIN_DB}"
+    app.postgres_engine = create_async_engine(postgres_conn)
+    app.db_client = sessionmaker(app.postgres_engine, class_=AsyncSession, expire_on_commit=False)
+    print("Connected to the PostgreSQL database!")
     
     llm_provider_factory = LLMProviderFactory(config=settings)
     vector_db_provider_factory = VectorDBProviderFactory(config=settings)
@@ -36,8 +39,8 @@ async def startup():
     
 @app.on_event("shutdown")
 async def shutdown():
-    app.mongodb_client.close()
-    print("Disconnected from the MongoDB database!")
+    await app.postgres_engine.dispose()
+    print("Disconnected from the PostgreSQL database!")
     app.vector_db_client.disconnect()
 
 # app.router.lifespan.on_startup.append(startup_span)
