@@ -1,3 +1,1 @@
-from .project import Project
-from .data_chunks import DataChunks, RetrievedDocument
-from .asset import Asset
+from .minirag.schemes import Project, Asset, DataChunk, RetrievedDocument
