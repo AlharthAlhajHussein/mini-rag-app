@@ -47,11 +47,31 @@ class GeminiProvider(LLMInterface):
             temperature=temperature if temperature is not None else self.default_temperature
         )
 
-        model = genai.GenerativeModel(self.generation_model_id)
+        # Extract system instruction from chat history (Gemini doesn't support 'system' role in messages)
+        system_instruction = None
+        filtered_history = []
+        
+        for message in chat_history:
+            if message.get("role") == "system":
+                # Use the first system message as system_instruction
+                if system_instruction is None and message.get("parts"):
+                    system_instruction = message["parts"][0].get("text", "")
+            else:
+                # Keep only user and model messages
+                filtered_history.append(message)
+        
+        # print(f"System instruction: {system_instruction}")
+        
+        model = genai.GenerativeModel(
+            self.generation_model_id,
+            system_instruction=system_instruction
+        )
         
         # For Gemini, the 'contents' argument handles the conversation history
         # If history exists, we append the current message to it
-        messages = chat_history + [self.construct_prompt(prompt=prompt, role=GeminiEnums.USER.value)]
+        messages = filtered_history + [self.construct_prompt(prompt=prompt, role=GeminiEnums.USER.value)]
+        
+        # print(f"Messages sent to Gemini: {messages}")
         
         response = model.generate_content(
             messages,
@@ -110,7 +130,7 @@ class GeminiProvider(LLMInterface):
         """
         return {
             "role": role,
-            "parts": [{"text": self.process_text(prompt)}]
+            "parts": [{"text": prompt}]
         }
 
     def process_text(self, text: str) -> str:

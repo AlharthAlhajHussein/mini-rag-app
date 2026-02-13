@@ -32,7 +32,7 @@ class HuggingFaceProvider(LLMInterface):
         self.embedding_model_id = model_name
         self.embedding_size = embedding_size
 
-    def generate_text(self, prompt: str, chat_history: list = [], 
+    def generate_text(self, prompt: str, chat_history: list = [],
                       max_output_tokens: int = None, temperature: float = None) -> str:
         
         if not self.generation_model_id:
@@ -82,7 +82,7 @@ class HuggingFaceProvider(LLMInterface):
             return None
 
     def construct_prompt(self, prompt, role):
-        return {"role": role, "content": self.process_text(prompt)}
+        return {"role": role, "content": prompt}
     
     def process_text(self, text: str) -> str:
         return text[:self.default_input_max_characters].strip()
