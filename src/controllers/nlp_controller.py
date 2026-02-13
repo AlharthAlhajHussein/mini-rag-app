@@ -1,5 +1,5 @@
 from .base_controller import BaseController
-from models.db_schemes import Project, DataChunks
+from models.db_schemes import Project, DataChunk
 from typing import List
 from stores.llm.llm_enums import DocumentTypeEnums
 import json
@@ -28,7 +28,7 @@ class NLPCntroller(BaseController):
             json.dumps(collection_info, default=lambda o: o.__dict__)
         )
     
-    def index_into_vector_db(self, project: Project, chunks: List[DataChunks], chunks_ids: List[int], do_reset: bool=False):
+    def index_into_vector_db(self, project: Project, chunks: List[DataChunk], chunks_ids: List[int], do_reset: bool=False):
                 
         # step1: get collection name
         collection_name = self.create_collection_name(project_id=project.project_id)
@@ -84,7 +84,6 @@ class NLPCntroller(BaseController):
         
         return results
     
-    
     def answer_rag_question(self, project: Project, query_text: str, top_k: int=5):
         
         answer, full_prompt, chat_history = None, None, None
@@ -102,7 +101,7 @@ class NLPCntroller(BaseController):
             self.template_parser.get(
                 group='rag',
                 key='document_prompt',
-                vars={'doc_num': idx+1, 'chunk_text': doc.text}
+                vars={'doc_num': idx+1, 'chunk_text': self.generation_client.process_text(doc.text)}
             )
             for idx, doc in enumerate(retrieved_documents)
         ])
