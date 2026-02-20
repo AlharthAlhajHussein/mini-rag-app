@@ -19,7 +19,7 @@ async def startup():
     print("Connected to the PostgreSQL database!")
     
     llm_provider_factory = LLMProviderFactory(config=settings)
-    vector_db_provider_factory = VectorDBProviderFactory(config=settings)
+    vector_db_provider_factory = VectorDBProviderFactory(config=settings, db_client=app.db_client)
 
     # Generation Client
     app.generation_client = llm_provider_factory.create(provider_name=settings.GENERATION_BACKEND)
@@ -31,7 +31,7 @@ async def startup():
     
     # Vector DB Client
     app.vector_db_client = vector_db_provider_factory.create(provider=settings.VECTOR_DB_BACKEND)
-    app.vector_db_client.connect()
+    await app.vector_db_client.connect()
     
     app.template_parser = TemplateParser(language=settings.PRIMARY_LANGUAGE, default_language=settings.DEFAULT_LANGUAGE)
     
@@ -41,7 +41,7 @@ async def startup():
 async def shutdown():
     await app.postgres_engine.dispose()
     print("Disconnected from the PostgreSQL database!")
-    app.vector_db_client.disconnect()
+    await app.vector_db_client.disconnect()
 
 # app.router.lifespan.on_startup.append(startup_span)
 # app.router.lifespan.on_shutdown.append(shutdown_span)
