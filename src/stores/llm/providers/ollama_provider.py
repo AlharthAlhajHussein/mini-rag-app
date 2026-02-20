@@ -3,7 +3,7 @@ from ..llm_enums import OllamaEnums
 import ollama
 import logging
 import os
-
+from typing import Union, List
 
 class OllamaProvider(LLMInterface):
     
@@ -80,17 +80,17 @@ class OllamaProvider(LLMInterface):
     def process_text(self, text: str) -> str:
         return text[:self.default_input_max_characters].strip()
     
-    def embed_text(self, text: str, document_type: str = None) -> list[float]:
+    def embed_text(self, text: Union[str, List[str]], document_type: str = None) -> list[float]:
         if not self.embedding_model_id:
             self.logger.error("Embedding model is not set.")
             return None
 
-        # if document_type:
-        #     text = document_type + ": " + text
+        if isinstance(text, str):
+            text = [text]
         
         # Build the arguments for the API call
         params = {
-            "input": text,
+            "input": [self.process_text(t) for t in text],
             "model": self.embedding_model_id
         }
 
@@ -104,14 +104,10 @@ class OllamaProvider(LLMInterface):
             if not response or 'embeddings' not in response or not response['embeddings']:
                 return None
             
-            vector = response['embeddings'][0]
+            print(f"Raw embedding result from Ollama: {response}")
+            vectors = [response['embeddings'][i]['embedding'] for i in range(len(response['embeddings']))]
             
-            # AUTO-DETECTION: Update embedding_size if it was previously unknown
-            if self.embedding_size is None:
-                self.embedding_size = len(vector)
-                self.logger.info(f"Auto-detected Ollama {self.embedding_model_id} embedding size: {self.embedding_size}")
-            
-            return vector
+            return vectors
         
         except Exception as e:
             self.logger.error(f"Ollama embedding error (host: {self.host}): {e}")

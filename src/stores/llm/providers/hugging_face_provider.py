@@ -2,6 +2,7 @@ import logging
 from huggingface_hub import InferenceClient
 from ..llm_interface import LLMInterface
 from ..llm_enums import HuggingFaceEnums
+from typing import Union, List
 class HuggingFaceProvider(LLMInterface):
     
     def __init__(self, api_key: str, 
@@ -57,23 +58,25 @@ class HuggingFaceProvider(LLMInterface):
             self.logger.error(f"Hugging Face API error: {e}")
             return None
 
-    def embed_text(self, text: str, document_type: str= None) -> list[float]:
+    def embed_text(self, text: Union[str, List[str]], document_type: str= None) -> list[float]:
         if not self.embedding_model_id:
             self.logger.error("Embedding model is not set.")
             return None
 
+        if isinstance(text, str):
+            text = [text]
+
         try:
             # Get the raw vector from Hugging Face
-            vector = self.client.feature_extraction(text, model=self.embedding_model_id)
+            vector = self.client.feature_extraction(
+                [self.process_text(t) for t in text], 
+                model=self.embedding_model_id)
             
             # Convert to list
             embedding_list = vector.tolist()
-
-            # --- AUTO-DETECTION LOGIC ---
-            # If we don't know the size yet, let's learn it from the first result!
-            if self.embedding_size is None:
-                self.embedding_size = len(embedding_list)
-                self.logger.info(f"Auto-detected embedding size for {self.embedding_model_id}: {self.embedding_size}")
+            
+            print(f"Raw vector from Hugging Face: {vector}")
+            print(f"Raw embedding from Hugging Face: {embedding_list}")
             
             return embedding_list
         
