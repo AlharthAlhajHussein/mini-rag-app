@@ -1,4 +1,5 @@
 services:
+  
   mongodb:
     image: mongo:latest
 
@@ -18,9 +19,51 @@ services:
     
     networks:
       - backend
+
+  pgvector:
+    image: pgvector/pgvector:0.8.1-pg17-trixie
+
+    container_name: pgvector
     
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - pgvector_data:/var/lib/postgresql/data
+
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+
+    networks:
+      - backend
+  
+  redis:
+    image: redis:alpine3.22
+    container_name: auth_redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      
+    # [FIX] Explicitly start redis-server with the password
+    command: /bin/sh -c "redis-server --requirepass $$REDIS_PASSWORD"
+
+    volumes:
+      - cash:/data # Persist data even if container restarts
+    
+    networks:
+      - backend  # Tells Redis to join this tunnel
+
 networks:
   backend:
 
 volumes:
   mongodb:
+  pgvector_data:
+  cash:

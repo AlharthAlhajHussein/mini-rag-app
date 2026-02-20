@@ -2,6 +2,7 @@ from ..llm_interface import LLMInterface
 from ..llm_enums import OpenAIEnums
 from openai import OpenAI
 import logging
+from typing import Union, List
 
 class OpenAIProvider(LLMInterface):
     
@@ -70,14 +71,17 @@ class OpenAIProvider(LLMInterface):
         return response.choices[0].message.content  
 
     
-    def embed_text(self, text: str, document_type: str = None) -> list[float]:
+    def embed_text(self, text: Union[str, List[str]], document_type: str = None):
         if not self.embedding_model_id:
             self.logger.error("Embedding model is not set.")
             return None
 
+        if isinstance(text, str):
+            text = [text]
+        
         # Build the arguments for the API call
         params = {
-            "input": text,
+            "input": [self.process_text(t) for t in text],
             "model": self.embedding_model_id
         }
 
@@ -91,15 +95,9 @@ class OpenAIProvider(LLMInterface):
             
             if not response or not response.data:
                 return None
+                
             
-            vector = response.data[0].embedding
-            
-            # AUTO-DETECTION: Update embedding_size if it was previously unknown
-            if self.embedding_size is None:
-                self.embedding_size = len(vector)
-                self.logger.info(f"Auto-detected OpenAI embedding size: {self.embedding_size}")
-            
-            return vector
+            return [rec.embedding for rec in response.data]
 
         except Exception as e:
             self.logger.error(f"OpenAI embedding error: {e}")
@@ -108,7 +106,7 @@ class OpenAIProvider(LLMInterface):
 
     def construct_prompt(self, prompt: str, role: str) -> dict:
         return {"role": role,
-                "content": self.process_text(prompt)}
+                "content": prompt}
 
     def process_text(self, text: str) -> str:
         return text[:self.default_input_max_characters].strip()

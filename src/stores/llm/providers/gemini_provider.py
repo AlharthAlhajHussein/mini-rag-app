@@ -1,9 +1,10 @@
 import logging
-# from google import genai
-# from google.genai import types
 from ..llm_interface import LLMInterface
 from ..llm_enums import GeminiEnums, DocumentTypeEnums
-import google.generativeai as genai
+# import google.generativeai as genai
+from google import genai
+from google.genai import types
+from typing import Union, List
 
 class GeminiProvider(LLMInterface):
     
@@ -22,8 +23,7 @@ class GeminiProvider(LLMInterface):
         self.embedding_size = None
 
         # Initialize the Google Generative AI client
-        genai.configure(api_key=self.api_key)
-        self.client = None  # Not needed, use genai directly
+        self.client = genai.Client(api_key=self.api_key)
         self.enums = GeminiEnums
         self.logger = logging.getLogger(__name__)
 
@@ -41,78 +41,107 @@ class GeminiProvider(LLMInterface):
             self.logger.error("Generation model for Gemini provider is not set.")
             return None
 
-        # Gemini uses 'max_output_tokens' and 'temperature' inside a config object
-        config = genai.types.GenerationConfig(
-            max_output_tokens=max_output_tokens or self.default_output_max_characters,
-            temperature=temperature if temperature is not None else self.default_temperature
-        )
+        
+        # Extract system instruction from chat history (Gemini doesn't support 'system' role in messages)
+        system_instruction = None
+        filtered_history = []
+                
+        for message in chat_history:
+            if message.get("role") == "system":
+                # Use the first system message as system_instruction
+                if system_instruction is None and message.get("parts"):
+                    part = message["parts"][0]
+                    # Check if 'part' is a dict or an object and get the text
+                    if isinstance(part, dict):
+                        system_instruction = part.get("text")
+                    else:
+                        system_instruction = getattr(part, 'text', str(part))
+            else:
+                # Keep only user and model messages
+                filtered_history.append(message)
 
-        model = genai.GenerativeModel(self.generation_model_id)
+        # Construct the new user message
+        user_message = self.construct_prompt(prompt=prompt, role=GeminiEnums.USER.value)
+        messages = filtered_history + [user_message]
         
-        # For Gemini, the 'contents' argument handles the conversation history
-        # If history exists, we append the current message to it
-        messages = chat_history + [self.construct_prompt(prompt=prompt, role=GeminiEnums.USER.value)]
+        # print(f"Messages sent to Gemini: {messages}")
+        max_output_tokens = max_output_tokens or self.default_output_max_characters
         
-        response = model.generate_content(
-            messages,
-            generation_config=config
+        response = self.client.models.generate_content(
+            model=self.generation_model_id,
+            contents=messages,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                max_output_tokens=max_output_tokens,
+                temperature=temperature if temperature is not None else self.default_temperature
+            ),
         )
             
         if not response or not response.text:
+            # Handle cases where finish_reason is MAX_TOKENS but text is partial
+            if response and response.candidates[0].finish_reason == "MAX_TOKENS":
+                self.logger.warning("Response was truncated due to token limits.")
+                # Still return whatever text was generated before the cutoff
+                return response.text.strip() if response.text else "The answer was too long to display."
             self.logger.error("Failed to get text from Gemini response.")
             return None
-            
-        return response.text
-            
+        answer = response.text        
+        
+        return answer
+    
+    def construct_prompt(self, prompt: str, role: str) -> dict:
+        """
+        Returns a plain dictionary instead of using types.Part.from_text directly.
+        The Gemini SDK accepts plain dictionaries, and these ARE JSON serializable.
+        """
+        return {
+            "role": role,
+            "parts": [{"text": prompt}] # Use a plain dict here instead of types.Part
+        }
 
+    def process_text(self, text: str) -> str:
+        return text[:self.default_input_max_characters].strip()
 
-    def embed_text(self, text: str, document_type: str = None) -> list[float]:
+    def embed_text(self, text: Union[str, List[str]], document_type: str = None) -> list[float]:
         if not self.embedding_model_id:
             self.logger.error("Embedding model is not set.")
             return None
-
+        
+        if isinstance(text, str):
+            text = [text]
+        
         # Mapping your internal document types to Gemini-specific task types
         input_type = GeminiEnums.DOCUMENT.value
         if document_type == DocumentTypeEnums.QUERY.value:
             input_type = GeminiEnums.QUERY.value
         
         try:
+            embed_config = {
+                "task_type": input_type,
+                "output_dimensionality": self.embedding_size
+            }
             # We pass output_dimensionality to the API. 
             # Note: This only works with newer models like 'text-embedding-004'
-            result = genai.embed_content(
+            result = self.client.models.embed_content(
                 model=self.embedding_model_id,
-                content=text,
-                task_type=input_type,
-                output_dimensionality=self.embedding_size # <--- Added this line
+                contents=[self.process_text(t) for t in text],
+                config=embed_config
             )
             
-            # In the google-generativeai library, the response is typically 
-            # accessed via result['embedding']
-            if not result or 'embedding' not in result:
+            # 1. Check for the attribute instead of the dictionary key
+            if not result or not hasattr(result, 'embeddings'):
+                self.logger.error("No embeddings attribute found in result")
                 return None
-            
-            vector = result['embedding']
-            
-            # AUTO-DETECTION: Update self.embedding_size if it was unknown
-            if self.embedding_size is None:
-                self.embedding_size = len(vector)
-                self.logger.info(f"Auto-detected Gemini embedding size: {self.embedding_size}")
-                
-            return vector
+
+            # 2. Extract the values from each ContentEmbedding object
+            # Each 'ContentEmbedding' has a 'values' attribute which is the list of floats
+            embeddings_list = [item.values for item in result.embeddings]
+
+            # 3. Return the result
+            return embeddings_list
                             
         except Exception as e:
             self.logger.error(f"Gemini embedding error: {str(e)}")
             return None
-
-    def construct_prompt(self, prompt: str, role: str) -> dict:
-        """
-        Gemini-compliant role mapping: 'user' or 'model'.
-        """
-        return {
-            "role": role,
-            "parts": [{"text": self.process_text(prompt)}]
-        }
-
-    def process_text(self, text: str) -> str:
-        return text[:self.default_input_max_characters].strip()
+        
     

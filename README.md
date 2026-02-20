@@ -6,6 +6,13 @@ This is a minimal implementation of the RAG model for question answering.
 
 - python 3.11 or later
 
+#### Install Dependencies
+
+```bash
+sudo apt update
+sudo apt install libpq-dev gcc python3-dev 
+```
+
 ### Install python using Miniconda
 
 1) Download and install MiniConda from [here](https://www.anaconda.com/docs/getting-started/miniconda/install)

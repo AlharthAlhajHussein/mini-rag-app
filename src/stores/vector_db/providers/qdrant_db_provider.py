@@ -10,49 +10,54 @@ from models.db_schemes import RetrievedDocument
 
 class QdrantDBProvider(VectorDBInterface):
     
-    def __init__(self, db_path: str, distance: str):
+    def __init__(self, db_client: str, default_distance_method: str, 
+                 default_vector_dimension: int = 768,
+                 index_threshold: int = 1000):
         
         self.client = None
-        self.db_path = db_path
+        self.db_client = db_client
+        self.default_vector_dimension = default_vector_dimension
+        self.index_threshold = index_threshold
         self.distance_metric = None
-        if distance == DistanceMetric.COSINE.value:
+        if default_distance_method == DistanceMetric.COSINE.value:
             self.distance_metric = models.Distance.COSINE
-        elif distance == DistanceMetric.DOT_PRODUCT.value:
+        elif default_distance_method == DistanceMetric.DOT_PRODUCT.value:
             self.distance_metric = models.Distance.DOT
-        elif distance == DistanceMetric.EUCLIDEAN.value:
+        elif default_distance_method == DistanceMetric.EUCLIDEAN.value:
             self.distance_metric = models.Distance.EUCLIDEAN
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("uvicorn")
         
         
-    def connect(self):
-        self.client = QdrantClient(path=self.db_path)
-        self.logger.info("Connected to Qdrant database at %s", self.db_path)
+    async def connect(self):
+        self.client = QdrantClient(path=self.db_client)
+        self.logger.info("Connected to Qdrant database at %s", self.db_client)
     
-    def disconnect(self):
+    async def disconnect(self):
         self.client = None
         self.logger.info("Disconnected from Qdrant database")
     
-    def is_collection_exists(self, collection_name: str) -> bool:
+    async def is_collection_exists(self, collection_name: str) -> bool:
         return self.client.collection_exists(collection_name=collection_name)
     
-    def list_all_collections(self) -> List:
+    async def list_all_collections(self) -> List:
         return self.client.get_collections()
     
-    def get_collection_info(self, collection_name: str) -> dict:
+    async def get_collection_info(self, collection_name: str) -> dict:
         return self.client.get_collection(collection_name=collection_name)
     
-    def delete_collection(self, collection_name: str):
-        if not self.is_collection_exists(collection_name):
+    async def delete_collection(self, collection_name: str):
+        if not await self.is_collection_exists(collection_name):
             self.logger.warning("Collection %s does not exist. Cannot delete.", collection_name)
             return
         return self.client.delete_collection(collection_name=collection_name)
     
-    def create_collection(self, collection_name: str, dimension: int, do_reset: bool = False):
+    async def create_collection(self, collection_name: str, dimension: int, do_reset: bool = False):
         
         if do_reset:
-            _ =self.delete_collection(collection_name)
+            _ = await self.delete_collection(collection_name)
         
-        if not self.is_collection_exists(collection_name):
+        if not await self.is_collection_exists(collection_name):
+            self.logger.info("Creating new Qdrant collection %s with dimension %d and distance metric %s", collection_name, dimension, self.distance_metric)
             self.client.create_collection(
                 collection_name = collection_name,
                 vectors_config = models.VectorParams(
@@ -63,13 +68,13 @@ class QdrantDBProvider(VectorDBInterface):
             return True
         return False
     
-    def insert_one(self, collection_name: str,
+    async def insert_one(self, collection_name: str,
                    text: str,
                    vector: List[float],
                    record_id: str,
                    metadata: dict= None):
         
-        if not self.is_collection_exists(collection_name):
+        if not await self.is_collection_exists(collection_name):
             self.logger.error("Collection %s does not exist. Cannot insert data.", collection_name)
             return False
         
@@ -93,7 +98,7 @@ class QdrantDBProvider(VectorDBInterface):
             return False
         return True
         
-    def insert_many(self, collection_name: str,
+    async def insert_many(self, collection_name: str,
                     texts: List[str],
                     vectors: List[List[float]],
                     record_ids: List[str],
@@ -136,7 +141,7 @@ class QdrantDBProvider(VectorDBInterface):
         return True
     
 
-    def search_by_vector(self, collection_name: str,
+    async def search_by_vector(self, collection_name: str,
                          query_vector: List[float],
                          top_k: int= 5) -> List[dict]:
         
