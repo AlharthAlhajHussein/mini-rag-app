@@ -8,7 +8,7 @@ import aiofiles
 import logging
 from .schemes import ProcessRequest
 from models.db_schemes import DataChunk, Asset
-
+from controllers import NLPCntroller
 
 logger = logging.getLogger('uvicorn.error')
 
@@ -76,6 +76,13 @@ async def process_endpoint(request: Request, project_id: int, process_request: P
     project_model = await ProjectModel.create_instance(request.app.db_client)
     project = await project_model.get_project_or_create_one(project_id)
     
+    nlp_controller = NLPCntroller(
+        vector_db_client=request.app.vector_db_client,
+        generation_client=request.app.generation_client,
+        embedding_client=request.app.embedding_client,
+        template_parser=request.app.template_parser
+    )
+    
     process_controller = ProcessController(project_id)
     
     asset_model = await AssetModel.create_instance(request.app.db_client)
@@ -106,7 +113,12 @@ async def process_endpoint(request: Request, project_id: int, process_request: P
     chunk_model = await ChunkModel.create_instance(request.app.db_client)
     
     if do_reset:
-            _ = await chunk_model.delete_chunks_by_project_id(project.project_id)
+        # delete vector db collection
+        collection_name = nlp_controller.create_collection_name(project_id=project.project_id)
+        _ = await nlp_controller.vector_db_client.delete_collection(collection_name=collection_name)
+        
+        # delete chunks from db
+        _ = await chunk_model.delete_chunks_by_project_id(project.project_id)
 
 
     for asset_id, file_id in project_files_ids.items():
