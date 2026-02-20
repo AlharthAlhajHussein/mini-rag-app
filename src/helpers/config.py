@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     VECTOR_DB_BACKEND: str  # Options: qdrant_db, pinecone_db, weaviate_db, faiss_db
     VECTOR_DB_PATH: str
     VECTOR_DB_DISTANCE_METRIC: str = None  # Options: Cosine, Euclidean, DotProduct
+    VECTOR_DB_PGVEC_INDEX_THRESHOLD: int = None  # Threshold for apply indexing strategy in pgvector provider, if number of vectors in collection exceeds this threshold, it will create an index on the vector column for faster similarity search
     
     PRIMARY_LANGUAGE: str = 'en'
     DEFAULT_LANGUAGE: str = 'en'
