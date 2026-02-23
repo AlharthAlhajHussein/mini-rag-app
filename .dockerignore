@@ -1,0 +1,25 @@
+# 1. Git history (Huge file size saver!)
+.git
+.gitignore
+
+# 2. Python cache and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# 3. Virtual Environments (Crucial to ignore!)
+.venv/
+venv/
+env/
+
+# 4. Environment Variables (Crucial for security!)
+# We don't want secrets baked into the image
+*.env
+docker/env/
+
+# 5. IDE and OS specific files
+.vscode/
+.idea/
+.DS_Store
