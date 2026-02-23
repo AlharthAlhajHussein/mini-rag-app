@@ -7,7 +7,8 @@ from stores.llm.templates.template_parser import TemplateParser
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from utils.metrics import setup_metrics
-
+import logging
+logger = logging.getLogger("uvicorn.error")
 
 app = FastAPI()
 
@@ -21,7 +22,7 @@ async def startup():
     postgres_conn = f"postgresql+asyncpg://{settings.POSTGRESQL_USERNAME}:{settings.POSTGRESQL_PASSWORD}@{settings.POSTGRESQL_HOST}:{settings.POSTGRESQL_PORT}/{settings.POSTGRESQL_MAIN_DB}"
     app.postgres_engine = create_async_engine(postgres_conn)
     app.db_client = sessionmaker(app.postgres_engine, class_=AsyncSession, expire_on_commit=False)
-    print("Connected to the PostgreSQL database!")
+    logger.info("Connected to the PostgreSQL database!")
     
     llm_provider_factory = LLMProviderFactory(config=settings)
     vector_db_provider_factory = VectorDBProviderFactory(config=settings, db_client=app.db_client)
@@ -45,7 +46,7 @@ async def startup():
 @app.on_event("shutdown")
 async def shutdown():
     await app.postgres_engine.dispose()
-    print("Disconnected from the PostgreSQL database!")
+    logger.info("Disconnected from the PostgreSQL database!")
     await app.vector_db_client.disconnect()
 
 # app.router.lifespan.on_startup.append(startup_span)

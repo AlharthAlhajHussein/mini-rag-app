@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxslt1-dev \
     libffi-dev \
     curl \
+    dos2unix \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy your requirements
@@ -33,8 +34,11 @@ RUN mkdir -p /app/models/db_schemes/minirag/
 # Copy config and entrypoint
 COPY docker/minirag/alembic.ini /app/models/db_schemes/minirag/alembic.ini
 COPY docker/minirag/entrypoint.sh /entrypoint.sh
-# Fix permissions
-RUN chmod +x /entrypoint.sh
+
+# Fix permissions with line endings Linux
+# RUN chmod +x /entrypoint.sh
+# Fix line endings and permissions (Works flawlessly on Windows, WSL, Mac, and Linux)
+RUN dos2unix /entrypoint.sh && chmod +x /entrypoint.sh
 
 ENTRYPOINT [ "/entrypoint.sh" ]
 

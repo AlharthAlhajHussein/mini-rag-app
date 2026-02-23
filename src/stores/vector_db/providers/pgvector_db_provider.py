@@ -34,8 +34,8 @@ class PgVectorDBProvider(VectorDBInterface):
                     await session.commit()
                 except Exception as e:
                     await session.rollback()
-                    print(f"Vector extension check: {e}")
-        self.logger.info("Connected to PostgreSQL database and ensured vector extension is available.")
+                    self.logger.error(f"Vector extension check failed: {e}")
+        self.logger.info("Ensured vector extension is available.")
     
     async def disconnect(self):
         pass
