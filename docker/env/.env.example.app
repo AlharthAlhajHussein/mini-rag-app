@@ -3,7 +3,7 @@ APP_VERSION="0.1.0"
 
 
 FILE_ALLOWED_TYPES=["text/plain", "application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]
-FILE_MAX_SIZE=10
+FILE_MAX_SIZE=100
 FILE_DEFAULT_CHUNK_SIZE=512000  # 512KB
 
 
@@ -33,14 +33,14 @@ EMBEDDING_SIZE=768  # OpenAI: 3076,1536 | Gemini: 768 | HuggingFace: 384 | Ollam
 
 INPUT_DEFAULT_MAX_CHARACTERS=2000
 GENERATION_DEFAULT_MAX_TOKENS=2000
-GENERATION_DEFAULT_TEMPERATURE=0.1
+GENERATION_DEFAULT_TEMPERATURE=0.2
 
 #=================================== Vector DB Configurations ===================================#
 
 VECTOR_DB_BACKEND="pgvector"  # Options: qdrant_db, pgvector
 VECTOR_DB_PATH="qdrant_db"
 VECTOR_DB_DISTANCE_METRIC="cosine"  # Options: Cosine, Euclidean, DotProduct
-VECTOR_DB_PGVEC_INDEX_THRESHOLD=100  # Threshold for apply indexing strategy in pgvector provider, if number of vectors in collection exceeds this threshold, it will create an index on the vector column for faster similarity search
+VECTOR_DB_PGVEC_INDEX_THRESHOLD=10000  # Threshold for apply indexing strategy in pgvector provider, if number of vectors in collection exceeds this threshold, it will create an index on the vector column for faster similarity search
 #=================================== Template Configurations ===================================#
 PRIMARY_LANGUAGE = "ar"
 DEFAULT_LANGUAGE = "en"
