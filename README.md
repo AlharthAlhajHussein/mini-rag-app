@@ -18,11 +18,11 @@ sudo apt install libpq-dev gcc python3-dev
 1) Download and install MiniConda from [here](https://www.anaconda.com/docs/getting-started/miniconda/install)
 2) Create a new environment using the following command:
 ```bash
-$ conda create -n mini-rag-app-env python=3.8
+conda create -n mini-rag-app-env python=3.8
 ```
 3) Activate the environment:
 ```bash
-$ conda activate mini-rag-app-env
+conda activate mini-rag-app-env
 ```
 
 ### (Optional) Setup you command line interface for better readability
@@ -36,13 +36,13 @@ export PS1="\[\033[01;32m\]\u@\h:\w\n\[\033[00m\]\$"
 ### Install the requirements packages
 
 ```bash
-$ pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 ### Setup the environment variables
 
 ```bash
-$ cp .env.example .env
+cp .env.example .env
 ```
 Set your environment variables in the `.env` file. Like `API_KEY` value.
 
@@ -50,8 +50,8 @@ Set your environment variables in the `.env` file. Like `API_KEY` value.
 ## Run Docker Compose Services
 
 ```bash
-$ cd docker
-$ cp .env.example .env
+cd docker
+cp .env.example .env
 ```
 
 - update `.env` with your credentials
@@ -59,12 +59,12 @@ $ cp .env.example .env
 
 
 ```bash
-$ cd docker
-$ sudo docker compose up -d
+cd docker
+sudo docker compose up -d
 ```
 
 ## Run the FastAPI server
 
 ```bash
-$ uvicorn main:app --reload --host 0.0.0.0 --port 5000
+uvicorn main:app --reload --host 0.0.0.0 --port 5000
 ```
