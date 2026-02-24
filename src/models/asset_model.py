@@ -37,10 +37,10 @@ class AssetModel(BaseDataModel):
             return assets
         
         
-    async def get_asset_record(self, asset_name: str, asset_project_id: int) -> Asset | None:
+    async def get_asset_record(self, asset_id: int, asset_project_id: int) -> Asset | None:
         async with self.db_client() as session:
             stmt = select(Asset).where(
-                func.lower(Asset.asset_name) == func.lower(asset_name),
+                Asset.asset_id == asset_id,
                 Asset.asset_project_id == asset_project_id
             )
             result = await session.execute(stmt)
