@@ -1,9 +1,10 @@
-from fastapi import APIRouter, status, Request
+from fastapi import APIRouter, status, Request, HTTPException
 from fastapi.responses import JSONResponse
 from .schemes import PushRequest, SearchRequest
 from models import ProjectModel, ChunkModel
 from controllers import NLPCntroller
 from models.enums.ResponseEnum import ResponseSignals
+from views.nlp import NLPPushResponse, NLPInfoResponse, NLPSearchResponse, NLPAnswerResponse
 from tqdm.auto import tqdm
 import logging
 
@@ -16,18 +17,46 @@ nlp_router = APIRouter(
     tags = ['nlp']
 )
 
-@nlp_router.post("/index/push/{project_id}")
+@nlp_router.post(
+    "/index/push/{project_id}",
+    response_model= NLPPushResponse,
+    status_code= status.HTTP_200_OK,
+    responses= {
+        404: {
+            "description": "Not Found",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "ProjectNotFound": ResponseSignals.PROJECT_NOT_FOUND.value + f": {4}",
+                    }
+                }
+            }
+        },
+        500: {
+            "description": "Internal Server Error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "InsertIntoDBError": ResponseSignals.INSERT_INTO_DB_ERROR.value,
+                    }
+                }
+            }
+        }
+    },
+    summary="Index project chunks into vector database",
+    description="This endpoint retrieves chunks of a project and indexes them into a vector database (embeddings). It supports batching to efficiently handle large datasets. The endpoint returns the total number of chunks successfully indexed. If the specified project does not exist, it returns a 404 error. If there is an issue during the indexing process, it returns a 500 error."
+)
 async def index_project(request: Request, project_id: int, push_request: PushRequest):
 
     project_model = await ProjectModel.create_instance(db_client=request.app.db_client)
 
     chunk_model = ChunkModel(request.app.db_client)
     
-    project = await project_model.get_project_or_create_one(project_id=project_id)
+    project = await project_model.get_project_or_create_one(project_id)
     if not project:
-        return JSONResponse(
-            status_code= status.HTTP_400_BAD_REQUEST,
-            content = {"signal": ResponseSignals.PROJECT_NOT_FOUND.value} 
+        raise HTTPException(
+            status_code= status.HTTP_404_NOT_FOUND,
+            detail= ResponseSignals.PROJECT_NOT_FOUND.value + f": {project_id}"
         )
     
     nlp_controller = NLPCntroller(
@@ -65,23 +94,24 @@ async def index_project(request: Request, project_id: int, push_request: PushReq
         is_inserted = await nlp_controller.index_into_vector_db(project, page_chunks)
         
         if not is_inserted:
-            return JSONResponse(
-                status_code= status.HTTP_400_BAD_REQUEST,
-                content = {"signal": ResponseSignals.INSERT_INTO_DB_ERROR.value} 
+            raise HTTPException(
+                status_code= status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail= ResponseSignals.INSERT_INTO_DB_ERROR.value
             )
         
         pbar.update(len(page_chunks))
         inserted_items_count += len(page_chunks)
         
-    return JSONResponse(
-        content= {
-            "signal": ResponseSignals.INSERT_INTO_VECTOR_DB_SUCCESS.value,
-            "inserted items count": inserted_items_count
-        }
-    )
+    return NLPPushResponse(inserted_items_count=inserted_items_count)
     
 
-@nlp_router.get("/index/info/{project_id}")
+@nlp_router.get(
+    "/index/info/{project_id}",
+    response_model= NLPInfoResponse,
+    status_code= status.HTTP_200_OK,
+    summary="Get vector database collection info for a project",
+    description="This endpoint retrieves information about the vector database collection associated with a specific project. It returns details such as the number of indexed items, collection name, and other relevant metadata. If the specified project does not exist, it returns a 404 error."
+)
 async def get_project_index_info(request: Request, project_id: int):
     
     project_model = await ProjectModel.create_instance(db_client=request.app.db_client)
@@ -95,15 +125,28 @@ async def get_project_index_info(request: Request, project_id: int):
     
     collection_info = await nlp_controller.get_collection_info(project)
     
-    return JSONResponse(
-        content= {
-            "signal": ResponseSignals.VECTORDB_COLLECTION_RETRIEVED.value,
-            "collection info": collection_info
+    return NLPInfoResponse(collection_info=collection_info)
+    
+    
+@nlp_router.post(
+    "/index/search/{project_id}",
+    response_model= NLPSearchResponse,
+    status_code= status.HTTP_200_OK,
+    responses= {
+        500: {
+            "description": "Internal Server Error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "signal": ResponseSignals.VECTORDB_SEARCH_ERROR_OR_NOT_FOUND.value
+                    }
+                }
+            }
         }
-    )
-    
-    
-@nlp_router.post("/index/search/{project_id}")
+    },
+    summary="Search in vector database collection for chunks relevant to a query",
+    description= "This endpoint allows searching for relevant chunks in the vector database collection associated with a specific project based on a query text. It returns a list of relevant chunks along with their similarity scores. If there is an issue during the search process or if no relevant chunks are found, it returns a 500 error with an appropriate signal."
+)
 async def search_index(request: Request, project_id: int, search_request: SearchRequest):
     
     project_model = await ProjectModel.create_instance(db_client=request.app.db_client)
@@ -118,20 +161,33 @@ async def search_index(request: Request, project_id: int, search_request: Search
     search_result = await nlp_controller.search_vector_db_collection(project, search_request.query_text, top_k=search_request.top_k)
     
     if not search_result:
-        return JSONResponse(
-            status_code= status.HTTP_400_BAD_REQUEST,
-            content = {"signal": ResponseSignals.VECTORDB_SEARCH_ERROR_OR_NOT_FOUND.value} 
+        raise HTTPException(
+            status_code= status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail= ResponseSignals.VECTORDB_SEARCH_ERROR_OR_NOT_FOUND.value
         )
     
-    return JSONResponse(
-        content= {
-            "signal": ResponseSignals.VECTORDB_SEARCH_SUCCESS.value,
-            "results": [result.dict() for result in search_result]
+    return NLPSearchResponse(results=search_result)
+    
+    
+@nlp_router.post(
+    "/index/answer/{project_id}",
+    response_model= NLPAnswerResponse,
+    status_code= status.HTTP_200_OK,
+    responses= {
+        500: {
+            "description": "Internal Server Error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "signal": ResponseSignals.RAG_ANSWER_ERROR.value
+                    }
+                }
+            }
         }
-    )
-    
-    
-@nlp_router.post("/index/answer/{project_id}")
+    },
+    summary="Generate answer for a query based on retrieved chunks from vector database collection",
+    description= "This endpoint generates an answer for a given query based on the relevant chunks retrieved from the vector database collection associated with a specific project. It uses a retrieval-augmented generation (RAG) approach to provide a comprehensive answer. If there is an issue during the answer generation process, it returns a 500 error with an appropriate signal."
+)
 async def answer_rag(request: Request, project_id: int, search_request: SearchRequest):
     
     
@@ -145,22 +201,15 @@ async def answer_rag(request: Request, project_id: int, search_request: SearchRe
         embedding_client=request.app.embedding_client,
         template_parser=request.app.template_parser)
     
-    answer, full_prompt, chat_hisroty = await nlp_controller.answer_rag_question(project, search_request.query_text, top_k=search_request.top_k)
+    answer, full_prompt, chat_history = await nlp_controller.answer_rag_question(project, search_request.query_text, top_k=search_request.top_k)
 
     if not answer:
-        return JSONResponse(
-            status_code= status.HTTP_400_BAD_REQUEST,
-            content = {"signal": ResponseSignals.RAG_ANSWER_ERROR.value} 
+        raise HTTPException(
+            status_code= status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail= ResponseSignals.RAG_ANSWER_ERROR.value
         )
     
-    return JSONResponse(
-        content= {
-            "signal": ResponseSignals.RAG_ANSWER_SUCCESS.value,
-            "answer": answer,
-            "full_prompt": full_prompt,
-            "chat_history": chat_hisroty
-        }
-    )
+    return NLPAnswerResponse(answer=answer)
 
 
     
