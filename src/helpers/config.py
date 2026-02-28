@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import Optional
 
 class Settings(BaseSettings):
 
@@ -10,22 +11,22 @@ class Settings(BaseSettings):
     FILE_DEFAULT_CHUNK_SIZE: int = 512000  # 512KB
     
     
-    POSTGRESQL_USERNAME: str
+    POSTGRESQL_USERNAME: str = "postgres"
     POSTGRESQL_PASSWORD: str
-    POSTGRESQL_MAIN_DB: str
-    POSTGRESQL_HOST: str = "localhost"
+    POSTGRESQL_MAIN_DB: str = "mini-rag-db"
+    POSTGRESQL_HOST: str = "localhost" # Use "host.docker.internal" to connect to the host machine from within a Docker container
     POSTGRESQL_PORT: int = 5432
-    ADDITIONAL_GCP: str = ""  # Additional connection parameters for GCP Cloud SQL
+    ADDITIONAL_GCP: str = "?host=/cloudsql/pdf-ocr-extractor-488523:us-central1:mini-rag-db-instance"  # Additional connection parameters for GCP Cloud SQL
 
     GENERATION_BACKEND: str = "gemini"  # Options: openai, gemini, huggingface
     EMBEDDING_BACKEND: str = "gemini"   # Options: openai, gemini, huggingface
 
 
-    OPENAI_API_KEY: str = None
-    GEMINI_API_KEY: str = None
-    HUGGING_FACE_API_KEY: str = None
-    OLLAMA_API_KEY: str = None
-    OLLAMA_HOST: str = None
+    OPENAI_API_KEY: Optional[str] = None
+    GEMINI_API_KEY: Optional[str] = None
+    HUGGING_FACE_API_KEY: Optional[str] = None
+    OLLAMA_API_KEY: Optional[str] = None
+    OLLAMA_HOST: Optional[str] = None
     
     GENERATION_MODEL_ID: str = "gemini-2.5-flash"  # OpenAI: gpt-4o, gpt-3.5-turbo | Gemini: gemini-1.5-pro | HuggingFace: meta-llama/Llama-2-7b-chat-hf
     EMBEDDING_MODEL_ID: str = "gemini-embedding-001"  # OpenAI: text-embedding-3-small | Gemini: models/text-embedding-004 | HuggingFace: sentence-transformers/all-MiniLM-L6-v2
