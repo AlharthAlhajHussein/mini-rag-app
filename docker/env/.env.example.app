@@ -2,8 +2,8 @@ APP_NAME="Mini RAG Application"
 APP_VERSION="0.1.0"
 
 
-FILE_ALLOWED_TYPES=["text/plain", "application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]
-FILE_MAX_SIZE=100
+FILE_ALLOWED_TYPES=["text/plain", "application/pdf"]
+FILE_MAX_SIZE=10
 FILE_DEFAULT_CHUNK_SIZE=512000  # 512KB
 
 
@@ -12,7 +12,7 @@ POSTGRESQL_PASSWORD=
 POSTGRESQL_HOST=
 POSTGRESQL_PORT=
 POSTGRESQL_MAIN_DB = 
-
+ADDITIONAL_GCP=
 #=================================== LLM Configurations ===================================#
 
 GENERATION_BACKEND="gemini"  # Options: openai, gemini, huggingface, ollama
