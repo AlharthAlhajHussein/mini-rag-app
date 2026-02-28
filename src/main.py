@@ -19,8 +19,10 @@ setup_metrics(app)
 async def startup():
     settings = get_settings()
     
-    postgres_conn = f"postgresql+asyncpg://{settings.POSTGRESQL_USERNAME}:{settings.POSTGRESQL_PASSWORD}@{settings.POSTGRESQL_HOST}:{settings.POSTGRESQL_PORT}/{settings.POSTGRESQL_MAIN_DB}"
-    app.postgres_engine = create_async_engine(postgres_conn)
+    # postgres_dev_conn = f"postgresql+asyncpg://{settings.POSTGRESQL_USERNAME}:{settings.POSTGRESQL_PASSWORD}@{settings.POSTGRESQL_HOST}:{settings.POSTGRESQL_PORT}/{settings.POSTGRESQL_MAIN_DB}"
+    postgres_prod_conn = f"postgresql+asyncpg://{settings.POSTGRESQL_USERNAME}:{settings.POSTGRESQL_PASSWORD}@/{settings.POSTGRESQL_MAIN_DB}{settings.ADDITIONAL_GCP}"
+    
+    app.postgres_engine = create_async_engine(postgres_prod_conn)
     app.db_client = sessionmaker(app.postgres_engine, class_=AsyncSession, expire_on_commit=False)
     logger.info("Connected to the PostgreSQL database!")
     
