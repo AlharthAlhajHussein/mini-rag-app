@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     
     
     POSTGRESQL_USERNAME: str = "postgres"
-    POSTGRESQL_PASSWORD: str
+    POSTGRESQL_PASSWORD: Optional[str] = None
     POSTGRESQL_MAIN_DB: str = "mini-rag-db"
     POSTGRESQL_HOST: str = "localhost" # Use "host.docker.internal" to connect to the host machine from within a Docker container
     POSTGRESQL_PORT: int = 5432
