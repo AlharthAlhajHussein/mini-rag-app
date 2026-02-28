@@ -18,7 +18,7 @@ env/
 # We don't want secrets baked into the image
 *.env
 docker/env/
-
+src/.env
 # 5. IDE and OS specific files
 .vscode/
 .idea/
