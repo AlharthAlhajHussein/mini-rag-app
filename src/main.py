@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from routes import base, data, nlp
 from helpers import get_settings
 from stores.llm import LLMProviderFactory
@@ -11,6 +12,22 @@ import logging
 logger = logging.getLogger("uvicorn.error")
 
 app = FastAPI()
+
+# --- PROFESSIONAL CORS SETUP ---
+# List the exact frontend URLs that are allowed to talk to your backend
+allowed_origins = [
+    "http://localhost:3000",   # Default port for React/Next.js
+    "http://127.0.0.1:3000",
+    # "https://your-future-production-frontend.com" <-- Add this later!
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,  # Only allow these specific domains
+    allow_credentials=True,         # Allow cookies and authentication headers (vital for the Invoker token!)
+    allow_methods=["*"],            # Allow all HTTP methods (GET, POST, PUT, DELETE)
+    allow_headers=["*"],            # Allow all headers (like Authorization)
+)
 
 # setup Prometheus metrics
 # setup_metrics(app)
