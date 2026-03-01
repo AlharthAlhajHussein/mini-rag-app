@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     
     
     POSTGRESQL_USERNAME: str = "postgres"
-    POSTGRESQL_PASSWORD: Optional[str] = "/#d5c`i$D=sdk.(="
+    POSTGRESQL_PASSWORD: Optional[str] = None  
     POSTGRESQL_MAIN_DB: str = "mini-rag-db"
     POSTGRESQL_HOST: str = "localhost" # Use "host.docker.internal" to connect to the host machine from within a Docker container
     POSTGRESQL_PORT: int = 5432
@@ -23,7 +23,7 @@ class Settings(BaseSettings):
 
 
     OPENAI_API_KEY: Optional[str] = None
-    GEMINI_API_KEY: Optional[str] = "AIzaSyCBI1Z0EchneJCoN4pDyvFyZIfOwGi5uF0"
+    GEMINI_API_KEY: Optional[str] = None
     HUGGING_FACE_API_KEY: Optional[str] = None
     OLLAMA_API_KEY: Optional[str] = None
     OLLAMA_HOST: Optional[str] = None
